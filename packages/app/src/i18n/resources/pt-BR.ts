@@ -1843,6 +1843,20 @@ export const ptBR: TranslationResources = {
     archiveFinishedAction: "Arquivar subagentes concluídos",
     archiveFinishedRetry: "Tentar novamente ({{failed}}/{{total}})",
   },
+  backgroundTasks: {
+    title: "Tarefas em segundo plano",
+    pillShellsOne: "1 shell",
+    pillShellsMany: "{{count}} shells",
+    pillTasksOne: "1 tarefa em segundo plano",
+    pillTasksMany: "{{count}} tarefas em segundo plano",
+    kindShell: "Shell",
+    kindMonitor: "Monitor",
+    stopAction: "Parar {{label}}",
+    stopTooltip: "Parar tarefa",
+    stopConfirmTitle: "Parar a tarefa em segundo plano?",
+    stopConfirmMessage: "{{label}} será parada. O agente será avisado de que ela foi parada.",
+    stopConfirmLabel: "Parar",
+  },
   panels: {
     draft: {
       newAgent: "Novo Agente",

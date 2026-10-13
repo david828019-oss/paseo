@@ -1835,6 +1835,20 @@ export const en = {
     archiveFinishedAction: "Archive finished subagents",
     archiveFinishedRetry: "Retry ({{failed}}/{{total}})",
   },
+  backgroundTasks: {
+    title: "Background tasks",
+    pillShellsOne: "1 shell",
+    pillShellsMany: "{{count}} shells",
+    pillTasksOne: "1 background task",
+    pillTasksMany: "{{count}} background tasks",
+    kindShell: "Shell",
+    kindMonitor: "Monitor",
+    stopAction: "Stop {{label}}",
+    stopTooltip: "Stop task",
+    stopConfirmTitle: "Stop background task?",
+    stopConfirmMessage: "{{label}} will be stopped. The agent is told it was stopped.",
+    stopConfirmLabel: "Stop",
+  },
   panels: {
     draft: {
       newAgent: "New Agent",

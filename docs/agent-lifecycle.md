@@ -37,6 +37,25 @@ work is gone. Report that exit as a turn failure so the agent lands in `error` w
 Only the Claude provider does this today; the others still report a death only when a turn happens to
 be in flight.
 
+## Background tasks
+
+A turn can end while the provider keeps work going: Claude's `run_in_background` shells and
+`Monitor` watches. When one finishes, Claude wakes itself and runs an autonomous turn. Between the
+turn's end and that wake the agent's lifecycle is `idle`, but it is not done, so an idle agent with
+background tasks gets the `running` status bucket (`packages/protocol/src/agent-state-bucket.ts`). The
+sidebar spins and the composer shows a **Background tasks track** pill ("1 shell") whose rows each have
+a Stop action (`agent.background_tasks.stop.request`, gated on `features.agentBackgroundTaskStop`).
+
+The Claude provider reads `system/background_tasks_changed`, which carries the whole live set on every
+change. Replace the set from each frame; never pair `task_started` with a terminal status. A foreground
+Bash call never announces a task, and a task that dies with its process never reports a terminal
+status. Claude Code sends no frame when its process dies or is retired, and none when a fresh one
+starts, so the provider clears the set itself on those paths. Backgrounded subagents and workflows
+(`local_agent`, `local_workflow`) are left out: the subagents track owns them.
+
+Background tasks live only in the provider runtime. They are not persisted, and a reloaded or resumed
+agent starts with none.
+
 ### Cancellation
 
 Provider interruption is idempotent at the `AgentSession` boundary. It resolves when the prior

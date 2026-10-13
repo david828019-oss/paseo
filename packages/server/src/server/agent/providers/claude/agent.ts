@@ -145,6 +145,7 @@ import { withTimeout } from "../../../../utils/promise-timeout.js";
 import { terminateWithTreeKill } from "../../../../utils/tree-kill.js";
 import { execCommand } from "../../../../utils/spawn.js";
 import { composeSystemPromptParts } from "../../system-prompt.js";
+import { readClaudeBackgroundTasksChanged } from "./background-tasks.js";
 
 const fsPromises = promises;
 const CLAUDE_SETTING_SOURCES: NonNullable<ClaudeOptions["settingSources"]> = [
@@ -2062,6 +2063,8 @@ class ClaudeAgentSession implements AgentSession {
   private readonly resolveBinary: () => Promise<string>;
   private query: Query | null = null;
   private childProcess: ChildProcess | null = null;
+  /** Whether the last `background_tasks_changed` frame listed any task. */
+  private hasBackgroundTasks = false;
   private input: AsyncMessageInput<SDKUserMessage> | null = null;
   /** The exact SDK query/input pair that owns the current foreground turn. */
   private activeForegroundQuery: Query | null = null;
@@ -2804,6 +2807,15 @@ class ClaudeAgentSession implements AgentSession {
     await this.revertConversation(input);
   }
 
+  async stopBackgroundTask(taskId: string): Promise<void> {
+    // Background tasks live in the running Claude Code process. Never spawn a new one to stop a
+    // task: a fresh process has none.
+    if (!this.query) {
+      throw new Error("Claude is not running, so it has no background tasks to stop");
+    }
+    await this.query.stopTask(taskId);
+  }
+
   private resolveSlashCommandInvocation(prompt: AgentPromptInput): SlashCommandInvocation | null {
     if (typeof prompt !== "string") {
       return null;
@@ -3136,6 +3148,7 @@ class ClaudeAgentSession implements AgentSession {
       // exit is not reported as a crash.
       const retiredChild = this.childProcess;
       this.childProcess = null;
+      this.clearReportedBackgroundTasks();
       if (retiredChild) this.failRunningRuntimeTasks();
       oldInput?.end();
       oldQuery.close?.();
@@ -3723,6 +3736,17 @@ class ClaudeAgentSession implements AgentSession {
         (event): AgentStreamEvent => ({ type: "provider_subagent", provider: "claude", event }),
       ),
     );
+    this.clearReportedBackgroundTasks();
+  }
+
+  // Claude Code sends no background_tasks_changed when its process dies or is retired, and none
+  // when a fresh process starts, so the set it last reported dies with the process here.
+  private clearReportedBackgroundTasks(): void {
+    if (!this.hasBackgroundTasks) {
+      return;
+    }
+    this.hasBackgroundTasks = false;
+    this.dispatchEvents([{ type: "background_tasks_changed", provider: "claude", tasks: [] }]);
   }
 
   private startQueryPump(): void {
@@ -4280,6 +4304,12 @@ class ClaudeAgentSession implements AgentSession {
     message: Extract<SDKMessage, { type: "system" }>,
     events: AgentStreamEvent[],
   ): void {
+    const backgroundTasks = readClaudeBackgroundTasksChanged(message);
+    if (backgroundTasks) {
+      this.hasBackgroundTasks = backgroundTasks.length > 0;
+      events.push({ type: "background_tasks_changed", provider: "claude", tasks: backgroundTasks });
+      return;
+    }
     if (message.subtype === "init") {
       const sessionUpdate = this.handleSystemMessage(message);
       if (sessionUpdate.notice) {

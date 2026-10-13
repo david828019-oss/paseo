@@ -1862,6 +1862,20 @@ export const fr: TranslationResources = {
     archiveFinishedAction: "Archiver les sous-agents terminés",
     archiveFinishedRetry: "Réessayer ({{failed}}/{{total}})",
   },
+  backgroundTasks: {
+    title: "Tâches en arrière-plan",
+    pillShellsOne: "1 shell",
+    pillShellsMany: "{{count}} shells",
+    pillTasksOne: "1 tâche en arrière-plan",
+    pillTasksMany: "{{count}} tâches en arrière-plan",
+    kindShell: "Shell",
+    kindMonitor: "Moniteur",
+    stopAction: "Arrêter {{label}}",
+    stopTooltip: "Arrêter la tâche",
+    stopConfirmTitle: "Arrêter la tâche en arrière-plan ?",
+    stopConfirmMessage: "{{label}} sera arrêtée. L'agent sera informé de l'arrêt.",
+    stopConfirmLabel: "Arrêter",
+  },
   panels: {
     draft: {
       newAgent: "Nouvel agent",

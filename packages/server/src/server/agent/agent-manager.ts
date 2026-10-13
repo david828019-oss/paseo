@@ -33,6 +33,7 @@ import {
   type AgentLaunchContext,
   type AgentSlashCommand,
   type AgentMode,
+  type AgentBackgroundTask,
   type AgentPermissionRequest,
   type AgentPermissionResponse,
   type AgentPermissionResult,
@@ -429,6 +430,11 @@ interface ManagedAgentBase {
   activeTurnStartedAt: Date | null;
   lastUsage?: AgentUsage;
   lastError?: string;
+  /**
+   * Work the provider runtime keeps going between turns. It lives in that runtime, so it is
+   * never persisted and a fresh session starts without any.
+   */
+  backgroundTasks?: AgentBackgroundTask[];
   attention: AttentionState;
   foregroundTurnWaiters: Set<ForegroundTurnWaiter>;
   finalizedForegroundTurnIds: Set<string>;
@@ -1994,6 +2000,21 @@ export class AgentManager {
     agent.config.featureValues = { ...agent.config.featureValues, [featureId]: value };
     this.touchUpdatedAt(agent);
     this.emitState(agent);
+  }
+
+  /**
+   * Stop one background task. The provider reports the shrunken set through
+   * `background_tasks_changed`, so the agent state is not touched here.
+   */
+  async stopAgentBackgroundTask(agentId: string, taskId: string): Promise<void> {
+    const agent = this.requireSessionAgent(agentId);
+    if (!agent.session.stopBackgroundTask) {
+      throw new Error("Agent session does not support stopping background tasks");
+    }
+    if (!agent.backgroundTasks?.some((task) => task.id === taskId)) {
+      throw new Error(`Background task '${taskId}' is not running`);
+    }
+    await agent.session.stopBackgroundTask(taskId);
   }
 
   async setTitle(agentId: string, title: string): Promise<void> {
@@ -3712,6 +3733,7 @@ export class AgentManager {
       ...agent,
       lifecycle: "closed",
       session: null,
+      backgroundTasks: undefined,
       activeForegroundTurnId: null,
       activeTurnId: null,
       activeTurnStartedAt: null,
@@ -4298,6 +4320,11 @@ export class AgentManager {
         return undefined;
       case "usage_updated":
         agent.lastUsage = event.usage;
+        this.emitState(agent);
+        return undefined;
+      case "background_tasks_changed":
+        agent.backgroundTasks = event.tasks;
+        flags.shouldDispatchEvent = false;
         this.emitState(agent);
         return undefined;
       case "mode_changed":
