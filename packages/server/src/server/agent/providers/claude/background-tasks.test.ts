@@ -50,6 +50,19 @@ describe("readClaudeBackgroundTasksChanged", () => {
     ).toEqual([{ id: "b1", type: "local_bash", description: "ctest" }]);
   });
 
+  test("leaves out ambient housekeeping tasks", () => {
+    expect(
+      readClaudeBackgroundTasksChanged({
+        type: "system",
+        subtype: "background_tasks_changed",
+        tasks: [
+          { task_id: "h1", task_type: "local_bash", description: "Index", ambient: true },
+          { task_id: "b1", task_type: "local_bash", description: "ctest" },
+        ],
+      }),
+    ).toEqual([{ id: "b1", type: "local_bash", description: "ctest" }]);
+  });
+
   test("ignores other system messages", () => {
     expect(
       readClaudeBackgroundTasksChanged({

@@ -2969,15 +2969,14 @@ export class DaemonClient {
   }
 
   async stopAgentBackgroundTask(agentId: string, taskId: string): Promise<void> {
-    const payload = await this.sendNamespacedCorrelatedSessionRequest<"agent.background_tasks.stop.response">(
-      {
-        message: {
-          type: "agent.background_tasks.stop.request",
-          agentId,
-          taskId,
-        },
+    type StopResponse = "agent.background_tasks.stop.response";
+    const payload = await this.sendNamespacedCorrelatedSessionRequest<StopResponse>({
+      message: {
+        type: "agent.background_tasks.stop.request",
+        agentId,
+        taskId,
       },
-    );
+    });
     if (!payload.accepted) {
       throw new Error(payload.error ?? "stopAgentBackgroundTask rejected");
     }

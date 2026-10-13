@@ -411,7 +411,7 @@ describe("WorkspaceDirectory", () => {
     await expect(workspace.workspaceStatus()).resolves.toBe("running");
   });
 
-  test("failed same-workspace subagent with leftover shells does not contribute running", async () => {
+  test("failed same-workspace subagent with leftover shells stays out of running", async () => {
     const workspace = new WorkspaceStatus();
 
     workspace.hasRootAgent({ id: "parent-agent", status: "idle" });

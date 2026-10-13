@@ -15,9 +15,12 @@ const SUBAGENT_TASK_TYPES = new Set(["local_agent", "local_workflow"]);
  *    "tasks":[{"task_id":"b1kxzuieg","task_type":"local_bash","description":"Sleep 6 seconds"}]}
  *
  * The frame carries the whole live set on every membership change, which is what the CLI footer
- * counts as "1 shell". Replace the set from each frame instead of pairing `task_started` with a
- * terminal status: a foreground Bash call never announces itself, and a task that dies with its
- * process never sends a terminal status.
+ * counts as "1 shell". Entries flagged `ambient` are Claude Code housekeeping, which the SDK marks
+ * so hosts can leave it out of activity indicators.
+ *
+ * Replace the set from each frame instead of pairing `task_started` with a terminal status: a
+ * foreground Bash call never announces itself, and a task that dies with its process never sends
+ * a terminal status.
  *
  * Returns null for any other message.
  */
@@ -30,7 +33,7 @@ export function readClaudeBackgroundTasksChanged(message: unknown): AgentBackgro
   }
   const tasks: AgentBackgroundTask[] = [];
   for (const entry of message.tasks) {
-    if (!isRecord(entry)) continue;
+    if (!isRecord(entry) || entry.ambient === true) continue;
     const id = readNonEmptyString(entry.task_id);
     const type = readNonEmptyString(entry.task_type);
     if (!id || !type || SUBAGENT_TASK_TYPES.has(type)) continue;
