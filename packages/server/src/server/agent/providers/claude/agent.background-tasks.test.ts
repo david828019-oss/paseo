@@ -128,12 +128,13 @@ describe("Claude background tasks", () => {
     );
 
     try {
+      // Reported mid-turn, so the provider stamps the foreground turn id on it.
       expect(backgroundTaskEvents(events)).toEqual([
-        {
+        expect.objectContaining({
           type: "background_tasks_changed",
           provider: "claude",
           tasks: [{ id: "b1kxzuieg", type: "local_bash", description: "Run ctest" }],
-        },
+        }),
       ]);
     } finally {
       await session.close();

@@ -333,8 +333,7 @@ function useAgentPanelDescriptor(
   const descriptorState = useSessionStore(
     useShallow((state) => {
       const session = state.sessions[context.serverId];
-      const agent =
-        session?.agents?.get(target.agentId) ?? session?.agentDetails?.get(target.agentId) ?? null;
+      const agent = resolveChatAgentFromSession(state, context.serverId, target.agentId);
       return {
         provider: agent?.provider ?? "codex",
         title: agent?.title ?? null,
