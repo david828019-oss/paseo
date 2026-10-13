@@ -11,6 +11,7 @@ import {
   buildBackgroundTasksPillPresentation,
   resolveBackgroundTaskKind,
   type BackgroundTaskKind,
+  type BackgroundTasksPillPresentation,
 } from "./presentation";
 import type { StopBackgroundTaskRequest } from "./use-stop-background-task";
 
@@ -38,14 +39,7 @@ export function BackgroundTasksTrack({
 }): ReactElement | null {
   const { t } = useTranslation();
   const pill = useMemo(() => buildBackgroundTasksPillPresentation(tasks), [tasks]);
-  const label =
-    pill.noun === "shell"
-      ? t(pill.count === 1 ? "backgroundTasks.pillShellsOne" : "backgroundTasks.pillShellsMany", {
-          count: pill.count,
-        })
-      : t(pill.count === 1 ? "backgroundTasks.pillTasksOne" : "backgroundTasks.pillTasksMany", {
-          count: pill.count,
-        });
+  const label = t(resolvePillLabelKey(pill), { count: pill.count });
   const segments = useMemo(() => [{ bucket: "running" as const, text: label }], [label]);
 
   if (tasks.length === 0) {
@@ -63,6 +57,19 @@ export function BackgroundTasksTrack({
       ))}
     </ComposerTrackPill>
   );
+}
+
+type PillLabelKey =
+  | "backgroundTasks.pillShellsOne"
+  | "backgroundTasks.pillShellsMany"
+  | "backgroundTasks.pillTasksOne"
+  | "backgroundTasks.pillTasksMany";
+
+function resolvePillLabelKey(pill: BackgroundTasksPillPresentation): PillLabelKey {
+  if (pill.noun === "shell") {
+    return pill.count === 1 ? "backgroundTasks.pillShellsOne" : "backgroundTasks.pillShellsMany";
+  }
+  return pill.count === 1 ? "backgroundTasks.pillTasksOne" : "backgroundTasks.pillTasksMany";
 }
 
 function useKindLabel(kind: BackgroundTaskKind, type: string): string {
