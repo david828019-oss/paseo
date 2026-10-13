@@ -1854,7 +1854,7 @@ export const ptBR: TranslationResources = {
     stopAction: "Parar {{label}}",
     stopTooltip: "Parar tarefa",
     stopConfirmTitle: "Parar a tarefa em segundo plano?",
-    stopConfirmMessage: "{{label}} será parada. O agente será avisado de que ela foi parada.",
+    stopConfirmMessage: "{{label}} será parada. Não é possível desfazer.",
     stopConfirmLabel: "Parar",
   },
   panels: {

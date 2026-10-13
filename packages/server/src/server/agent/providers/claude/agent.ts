@@ -2065,6 +2065,12 @@ class ClaudeAgentSession implements AgentSession {
   private childProcess: ChildProcess | null = null;
   /** Whether the last `background_tasks_changed` frame listed any task. */
   private hasBackgroundTasks = false;
+  /**
+   * Tasks stopped from Paseo whose `task_notification` has not arrived yet. That notification
+   * answers our own request, so it must not open an autonomous turn: if Claude Code does not
+   * follow it with a model turn, no result would ever close it.
+   */
+  private readonly userStoppedTaskIds = new Set<string>();
   private input: AsyncMessageInput<SDKUserMessage> | null = null;
   /** The exact SDK query/input pair that owns the current foreground turn. */
   private activeForegroundQuery: Query | null = null;
@@ -2813,7 +2819,13 @@ class ClaudeAgentSession implements AgentSession {
     if (!this.query) {
       throw new Error("Claude is not running, so it has no background tasks to stop");
     }
-    await this.query.stopTask(taskId);
+    this.userStoppedTaskIds.add(taskId);
+    try {
+      await this.query.stopTask(taskId);
+    } catch (error) {
+      this.userStoppedTaskIds.delete(taskId);
+      throw error;
+    }
   }
 
   private resolveSlashCommandInvocation(prompt: AgentPromptInput): SlashCommandInvocation | null {
@@ -3148,7 +3160,6 @@ class ClaudeAgentSession implements AgentSession {
       // exit is not reported as a crash.
       const retiredChild = this.childProcess;
       this.childProcess = null;
-      this.clearReportedBackgroundTasks();
       if (retiredChild) this.failRunningRuntimeTasks();
       oldInput?.end();
       oldQuery.close?.();
@@ -3178,6 +3189,9 @@ class ClaudeAgentSession implements AgentSession {
     const options = await this.buildOptions();
     this.logger.debug({ options: summarizeClaudeOptionsForLog(options) }, "claude query");
     this.input = input;
+    // Background tasks belong to the process that reported them. Every path that ends up here
+    // has lost or retired that process, and a fresh one never reports an empty set.
+    this.clearReportedBackgroundTasks();
     this.query = claudeQuery(
       { prompt: input.iterable, options },
       {
@@ -3899,10 +3913,20 @@ class ClaudeAgentSession implements AgentSession {
    * the agent stuck reporting "running" forever.
    */
   private shouldStartAutonomousTurn(message: SDKMessage): boolean {
+    if (this.isUserStoppedTaskNotification(message)) {
+      return false;
+    }
     if (this.activeForegroundTurnId || this.pendingInterruptAbort) {
       return false;
     }
     return this.isAssistantishMessage(message);
+  }
+
+  private isUserStoppedTaskNotification(message: SDKMessage): boolean {
+    if (message.type !== "system" || message.subtype !== "task_notification") {
+      return false;
+    }
+    return this.userStoppedTaskIds.delete(message.task_id);
   }
 
   private async routeSdkMessageFromPump(message: SDKMessage): Promise<void> {

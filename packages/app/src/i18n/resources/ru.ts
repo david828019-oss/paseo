@@ -1853,7 +1853,7 @@ export const ru: TranslationResources = {
     stopAction: "Остановить {{label}}",
     stopTooltip: "Остановить задачу",
     stopConfirmTitle: "Остановить фоновую задачу?",
-    stopConfirmMessage: "{{label}} будет остановлена. Агент получит уведомление об остановке.",
+    stopConfirmMessage: "{{label}} будет остановлена. Это действие нельзя отменить.",
     stopConfirmLabel: "Остановить",
   },
   panels: {

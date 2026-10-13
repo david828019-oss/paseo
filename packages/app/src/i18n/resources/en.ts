@@ -1846,7 +1846,7 @@ export const en = {
     stopAction: "Stop {{label}}",
     stopTooltip: "Stop task",
     stopConfirmTitle: "Stop background task?",
-    stopConfirmMessage: "{{label}} will be stopped. The agent is told it was stopped.",
+    stopConfirmMessage: "{{label}} will be stopped. This can't be undone.",
     stopConfirmLabel: "Stop",
   },
   panels: {

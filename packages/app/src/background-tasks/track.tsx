@@ -92,7 +92,7 @@ function BackgroundTaskRow({
   }, [label, onStopTask, task.id]);
 
   return (
-    <ComposerTrackRow accessibilityLabel={label} testID={`background-tasks-track-row-${task.id}`}>
+    <ComposerTrackRow accessibilityLabel={label}>
       <Text style={styles.rowLabel} numberOfLines={1}>
         {label}
       </Text>

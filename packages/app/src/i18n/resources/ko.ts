@@ -1831,7 +1831,7 @@ export const ko: TranslationResources = {
     stopAction: "{{label}} 중지",
     stopTooltip: "작업 중지",
     stopConfirmTitle: "백그라운드 작업을 중지할까요?",
-    stopConfirmMessage: "{{label}}이(가) 중지됩니다. 에이전트에게 중지되었다고 알립니다.",
+    stopConfirmMessage: "{{label}}이(가) 중지됩니다. 이 작업은 되돌릴 수 없습니다.",
     stopConfirmLabel: "중지",
   },
   panels: {

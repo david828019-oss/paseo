@@ -1873,7 +1873,7 @@ export const fr: TranslationResources = {
     stopAction: "Arrêter {{label}}",
     stopTooltip: "Arrêter la tâche",
     stopConfirmTitle: "Arrêter la tâche en arrière-plan ?",
-    stopConfirmMessage: "{{label}} sera arrêtée. L'agent sera informé de l'arrêt.",
+    stopConfirmMessage: "{{label}} sera arrêtée. Cette action est irréversible.",
     stopConfirmLabel: "Arrêter",
   },
   panels: {

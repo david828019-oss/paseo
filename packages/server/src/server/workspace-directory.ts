@@ -375,7 +375,9 @@ export class WorkspaceDirectory {
       }
       const isWorkspaceRoot = workspaceAgent.id === agent.id;
       const backgroundTaskCount = agent.backgroundTasks?.length ?? 0;
-      if (!isWorkspaceRoot && agent.status !== "running" && backgroundTaskCount === 0) {
+      const isWorking =
+        agent.status === "running" || (agent.status === "idle" && backgroundTaskCount > 0);
+      if (!isWorkspaceRoot && !isWorking) {
         continue;
       }
       const bucket = isWorkspaceRoot

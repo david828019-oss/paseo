@@ -411,6 +411,19 @@ describe("WorkspaceDirectory", () => {
     await expect(workspace.workspaceStatus()).resolves.toBe("running");
   });
 
+  test("failed same-workspace subagent with leftover shells does not contribute running", async () => {
+    const workspace = new WorkspaceStatus();
+
+    workspace.hasRootAgent({ id: "parent-agent", status: "idle" });
+    workspace.hasDelegatedAgent({
+      id: "child-agent",
+      status: "error",
+      backgroundTasks: [{ id: "b1", type: "local_bash", description: null }],
+    });
+
+    await expect(workspace.workspaceStatus()).resolves.toBe("done");
+  });
+
   test("running same-workspace subagent contributes running to its parent workspace", async () => {
     const workspace = new WorkspaceStatus();
 

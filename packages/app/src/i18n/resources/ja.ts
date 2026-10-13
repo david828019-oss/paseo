@@ -1840,7 +1840,7 @@ export const ja: TranslationResources = {
     stopAction: "{{label}} を停止",
     stopTooltip: "タスクを停止",
     stopConfirmTitle: "バックグラウンドタスクを停止しますか？",
-    stopConfirmMessage: "{{label}} を停止します。エージェントには停止したことが通知されます。",
+    stopConfirmMessage: "{{label}} を停止します。この操作は元に戻せません。",
     stopConfirmLabel: "停止",
   },
   panels: {

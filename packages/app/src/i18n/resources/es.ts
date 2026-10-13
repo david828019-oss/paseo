@@ -1869,7 +1869,7 @@ export const es: TranslationResources = {
     stopAction: "Detener {{label}}",
     stopTooltip: "Detener tarea",
     stopConfirmTitle: "¿Detener la tarea en segundo plano?",
-    stopConfirmMessage: "Se detendrá {{label}}. Se avisará al agente de que se detuvo.",
+    stopConfirmMessage: "Se detendrá {{label}}. No se puede deshacer.",
     stopConfirmLabel: "Detener",
   },
   panels: {

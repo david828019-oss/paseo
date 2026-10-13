@@ -179,6 +179,39 @@ describe("Claude background tasks", () => {
     }
   });
 
+  test("does not open a turn for the notification that answers a stop", async () => {
+    let deliver: ((event: unknown) => void) | undefined;
+    const { session, events, query } = await createBackgroundShellSession(
+      new Promise<unknown>((resolve) => {
+        deliver = resolve;
+      }),
+    );
+
+    try {
+      const turnEventsBefore = events.filter((event) => event.type === "turn_started").length;
+      await session.stopBackgroundTask?.("b1kxzuieg");
+      deliver?.({
+        type: "system",
+        subtype: "task_notification",
+        task_id: "b1kxzuieg",
+        tool_use_id: "toolu_bash",
+        status: "stopped",
+        output_file: "/tmp/b1kxzuieg.output",
+        summary: "Background command stopped",
+      });
+
+      // The pump asks for the next frame only after it has routed the delivered one.
+      await vi.waitFor(() =>
+        expect(query.next).toHaveBeenCalledTimes(BACKGROUND_SHELL_TURN_EVENTS.length + 2),
+      );
+      expect(events.filter((event) => event.type === "turn_started")).toHaveLength(
+        turnEventsBefore,
+      );
+    } finally {
+      await session.close();
+    }
+  });
+
   test("stops one background task through the live query", async () => {
     const { session, query } = await createBackgroundShellSession(
       new Promise<never>(() => undefined),

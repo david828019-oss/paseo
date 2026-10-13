@@ -1800,7 +1800,7 @@ export const zhCN: TranslationResources = {
     stopAction: "停止 {{label}}",
     stopTooltip: "停止任务",
     stopConfirmTitle: "停止后台任务？",
-    stopConfirmMessage: "{{label}} 将被停止，agent 会收到停止通知。",
+    stopConfirmMessage: "{{label}} 将被停止，此操作无法撤销。",
     stopConfirmLabel: "停止",
   },
   panels: {

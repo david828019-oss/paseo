@@ -37,6 +37,19 @@ work is gone. Report that exit as a turn failure so the agent lands in `error` w
 Only the Claude provider does this today; the others still report a death only when a turn happens to
 be in flight.
 
+### Cancellation
+
+Provider interruption is idempotent at the `AgentSession` boundary. It resolves when the prior
+foreground turn can no longer run, including when the provider reports that it is already idle. It
+rejects only when the provider may still own the turn. Provider adapters translate native errors
+into that contract; lifecycle callers do not interpret provider-specific errors.
+
+After an acknowledged interrupt, the manager settles the captured run even when no terminal event
+arrives or the run was still waiting for its provider turn id. The captured run token prevents an
+older cancellation from settling a newer turn. If interruption is rejected or times out, the agent
+keeps its active foreground turn and replacement, reload, rewind, and Stop report the failure.
+Accepting new work after an ambiguous interruption would create a split-brain session.
+
 ## Background tasks
 
 A turn can end while the provider keeps work going: Claude's `run_in_background` shells and
@@ -50,24 +63,13 @@ The Claude provider reads `system/background_tasks_changed`, which carries the w
 change. Replace the set from each frame; never pair `task_started` with a terminal status. A foreground
 Bash call never announces a task, and a task that dies with its process never reports a terminal
 status. Claude Code sends no frame when its process dies or is retired, and none when a fresh one
-starts, so the provider clears the set itself on those paths. Backgrounded subagents and workflows
+starts, so the provider clears the set itself whenever it loses a process or starts one. The
+`task_notification` that answers a Stop from Paseo does not open an autonomous turn: Claude may not
+follow it with a model turn, and nothing else would close that turn. Backgrounded subagents and workflows
 (`local_agent`, `local_workflow`) are left out: the subagents track owns them.
 
 Background tasks live only in the provider runtime. They are not persisted, and a reloaded or resumed
 agent starts with none.
-
-### Cancellation
-
-Provider interruption is idempotent at the `AgentSession` boundary. It resolves when the prior
-foreground turn can no longer run, including when the provider reports that it is already idle. It
-rejects only when the provider may still own the turn. Provider adapters translate native errors
-into that contract; lifecycle callers do not interpret provider-specific errors.
-
-After an acknowledged interrupt, the manager settles the captured run even when no terminal event
-arrives or the run was still waiting for its provider turn id. The captured run token prevents an
-older cancellation from settling a newer turn. If interruption is rejected or times out, the agent
-keeps its active foreground turn and replacement, reload, rewind, and Stop report the failure.
-Accepting new work after an ambiguous interruption would create a split-brain session.
 
 ## Relationships
 

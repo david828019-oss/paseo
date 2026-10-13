@@ -1821,7 +1821,7 @@ export const ar: TranslationResources = {
     stopAction: "إيقاف {{label}}",
     stopTooltip: "إيقاف المهمة",
     stopConfirmTitle: "إيقاف المهمة في الخلفية؟",
-    stopConfirmMessage: "سيتم إيقاف {{label}}. سيتم إبلاغ الوكيل بأنها أُوقفت.",
+    stopConfirmMessage: "سيتم إيقاف {{label}}. لا يمكن التراجع عن ذلك.",
     stopConfirmLabel: "إيقاف",
   },
   panels: {
