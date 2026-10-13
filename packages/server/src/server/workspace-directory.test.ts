@@ -82,6 +82,7 @@ class WorkspaceStatus {
       workspaceDirectory: workspace.cwd,
       projectKind: "git",
       workspaceKind: workspace.kind,
+      background: workspace.background,
       name: workspace.displayName,
       archivingAt: null,
       status: "done",
@@ -244,6 +245,7 @@ interface AgentState {
   pendingPermissionCount?: number;
   requiresAttention?: boolean;
   attentionReason?: AgentSnapshotPayload["attentionReason"];
+  backgroundTasks?: AgentSnapshotPayload["backgroundTasks"];
 }
 
 function createAgent(
@@ -289,6 +291,7 @@ function createAgent(
     attentionReason: input.attentionReason ?? null,
     attentionTimestamp: null,
     archivedAt: null,
+    ...(input.backgroundTasks ? { backgroundTasks: input.backgroundTasks } : {}),
   } satisfies AgentSnapshotPayload;
 }
 
@@ -380,6 +383,46 @@ describe("WorkspaceDirectory", () => {
       "workspace-1": "done",
       "workspace-1-sibling": "running",
     });
+  });
+
+  test("idle root agent with a background shell keeps its workspace running", async () => {
+    const workspace = new WorkspaceStatus();
+
+    workspace.hasRootAgent({
+      id: "root-agent",
+      status: "idle",
+      requiresAttention: true,
+      attentionReason: "finished",
+      backgroundTasks: [{ id: "b1", type: "local_bash", description: "Run ctest" }],
+    });
+
+    await expect(workspace.workspaceStatus()).resolves.toBe("running");
+  });
+
+  test("idle same-workspace subagent with a background shell contributes running", async () => {
+    const workspace = new WorkspaceStatus();
+
+    workspace.hasRootAgent({ id: "parent-agent", status: "idle" });
+    workspace.hasDelegatedAgent({
+      id: "child-agent",
+      status: "idle",
+      backgroundTasks: [{ id: "b1", type: "local_bash", description: null }],
+    });
+
+    await expect(workspace.workspaceStatus()).resolves.toBe("running");
+  });
+
+  test("failed same-workspace subagent with leftover shells stays out of running", async () => {
+    const workspace = new WorkspaceStatus();
+
+    workspace.hasRootAgent({ id: "parent-agent", status: "idle" });
+    workspace.hasDelegatedAgent({
+      id: "child-agent",
+      status: "error",
+      backgroundTasks: [{ id: "b1", type: "local_bash", description: null }],
+    });
+
+    await expect(workspace.workspaceStatus()).resolves.toBe("done");
   });
 
   test("running same-workspace subagent contributes running to its parent workspace", async () => {
@@ -571,7 +614,9 @@ describe("WorkspaceDirectory empty projects", () => {
         workspaceDirectory: workspace.cwd,
         projectKind: "non_git",
         workspaceKind: workspace.kind,
+        background: workspace.background,
         name: workspace.displayName,
+        ...(workspace.internal ? { background: true } : {}),
         archivingAt: null,
         status: "done",
         activityAt: null,
@@ -643,6 +688,41 @@ describe("WorkspaceDirectory empty projects", () => {
     });
 
     expect(result.emptyProjects.map((p) => p.projectId)).toEqual(["empty"]);
+  });
+
+  test("hides background workspaces and counts their project as empty unless includeBackground", async () => {
+    const directory = makeDirectory({
+      projects: [project({ projectId: "hidden-only" })],
+      workspaces: [
+        {
+          workspaceId: "ws-internal",
+          projectId: "hidden-only",
+          cwd: "/workspace/hidden-only",
+          kind: "directory",
+          displayName: "helper",
+          createdAt: NOW,
+          updatedAt: NOW,
+          archivedAt: null,
+          background: true,
+        },
+      ],
+    });
+
+    const hidden = await directory.listFetchEntries({
+      type: "fetch_workspaces_request",
+      requestId: "r1",
+      filter: { query: "helper" },
+    });
+    expect(hidden.entries).toEqual([]);
+    expect(hidden.emptyProjects.map((p) => p.projectId)).toEqual(["hidden-only"]);
+
+    const shown = await directory.listFetchEntries({
+      type: "fetch_workspaces_request",
+      requestId: "r2",
+      filter: { includeBackground: true },
+    });
+    expect(shown.entries.map((entry) => entry.id)).toEqual(["ws-internal"]);
+    expect(shown.emptyProjects).toEqual([]);
   });
 });
 

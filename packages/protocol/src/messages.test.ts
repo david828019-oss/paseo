@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  AgentTimelineItemPayloadSchema,
   FileExplorerRequestSchema,
   PaseoWorktreeArchiveRequestSchema,
   parseServerInfoStatusPayload,
@@ -286,6 +287,40 @@ describe("diagnostics message contract", () => {
   });
 });
 
+describe("agent background tasks", () => {
+  test("parses the namespaced background task stop request and response", () => {
+    expect(
+      SessionInboundMessageSchema.parse({
+        type: "agent.background_tasks.stop.request",
+        agentId: "agent-1",
+        taskId: "b1kxzuieg",
+        requestId: "req-stop",
+      }),
+    ).toEqual({
+      type: "agent.background_tasks.stop.request",
+      agentId: "agent-1",
+      taskId: "b1kxzuieg",
+      requestId: "req-stop",
+    });
+
+    const response = SessionOutboundMessageSchema.parse({
+      type: "agent.background_tasks.stop.response",
+      payload: { requestId: "req-stop", agentId: "agent-1", accepted: true, error: null },
+    });
+    expect(response.type).toBe("agent.background_tasks.stop.response");
+  });
+
+  test("parses the agentBackgroundTaskStop server feature gate", () => {
+    const parsed = parseServerInfoStatusPayload({
+      status: "server_info",
+      serverId: "srv-test",
+      features: { agentBackgroundTaskStop: true },
+    });
+
+    expect(parsed?.features?.agentBackgroundTaskStop).toBe(true);
+  });
+});
+
 describe("agent detach RPC", () => {
   test("parses the namespaced detach request", () => {
     const parsed = SessionInboundMessageSchema.parse({
@@ -519,4 +554,31 @@ describe("viewed timeline subscription messages", () => {
       },
     });
   });
+});
+
+test("agent messages are an optional semantic payload on existing tool rows", () => {
+  const legacy = {
+    type: "tool_call",
+    callId: "delivery",
+    name: "agent_message",
+    status: "completed",
+    error: null,
+    detail: { type: "plain_text", text: "Done" },
+  };
+  const agentMessage = {
+    event: "finished",
+    sender: { id: "server::worker", title: "Reviewer" },
+    text: "Done",
+  };
+  expect(AgentTimelineItemPayloadSchema.parse(legacy)).toEqual(legacy);
+  expect(AgentTimelineItemPayloadSchema.parse({ ...legacy, agentMessage })).toEqual({
+    ...legacy,
+    agentMessage,
+  });
+  expect(
+    AgentTimelineItemPayloadSchema.safeParse({
+      ...legacy,
+      agentMessage: { ...agentMessage, sender: { id: 42 } },
+    }).success,
+  ).toBe(false);
 });
