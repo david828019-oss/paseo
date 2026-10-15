@@ -87,6 +87,10 @@ function renderTerminalRow(row: TerminalCell[], padToCols?: number): string {
 
   for (let index = 0; index < length; index += 1) {
     const cell = row[index] ?? { char: " " };
+    // The empty spacer after a wide character: the wide glyph already advanced past it.
+    if (cell.char === "") {
+      continue;
+    }
     const nextStyle = getTerminalStyle(cell);
     if (!terminalStylesEqual(previousStyle, nextStyle)) {
       output.push(styleToAnsi(nextStyle));

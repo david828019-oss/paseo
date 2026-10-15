@@ -523,6 +523,25 @@ describe("createTerminal", () => {
     expect(withoutFlags.scrollbackWrapped).toBeUndefined();
   });
 
+  it("reports the cell after a wide character as an empty spacer", async () => {
+    const session = trackSession(
+      await createTerminal({
+        workspaceId: "ws-test",
+        cwd: realpathSync(tmpdir()),
+        cols: 40,
+        rows: 5,
+        command: process.execPath,
+        args: ["-e", "process.stdout.write('\\u4f60\\u597d!'); setInterval(() => {}, 100000);"],
+      }),
+    );
+
+    const state = await waitForState(session, (current) => current.grid[0]?.[4]?.char === "!");
+
+    const chars = state.grid[0].map((cell) => cell.char);
+    expect(chars.slice(0, 5)).toEqual(["你", "", "好", "", "!"]);
+    expect(rowToText(state.grid[0])).toBe("你好!");
+  });
+
   it("captures exit diagnostics from the terminal buffer", async () => {
     const session = trackSession(
       await createTerminal({
