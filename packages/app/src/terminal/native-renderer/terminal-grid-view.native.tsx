@@ -121,7 +121,8 @@ function TerminalGridRun({ run, cellWidth, cellHeight, textStyle }: TerminalGrid
       {run.renderKind === "custom-glyph" ? (
         <TerminalGridCustomGlyphRun run={run} cellWidth={cellWidth} cellHeight={cellHeight} />
       ) : (
-        <Text numberOfLines={1} style={runTextStyle}>
+        // Clip a glyph wider than its cells; the default tail mode swaps it for an ellipsis.
+        <Text ellipsizeMode="clip" numberOfLines={1} style={runTextStyle}>
           {run.text}
         </Text>
       )}

@@ -96,6 +96,17 @@ function terminalCellCount(cells: TerminalRenderableCell[], col: number, char: s
   return 1;
 }
 
+// A text run lays its glyphs out with the font's own advances. Glyphs from fallback fonts
+// (CJK, emoji, symbols Menlo lacks) don't advance by whole cells, so merging them into a run
+// shifts the rest of the row off the grid. Only printable ASCII is safe to merge.
+function isGridAlignedText(text: string): boolean {
+  if (text.length !== 1) {
+    return false;
+  }
+  const code = text.charCodeAt(0);
+  return code >= 0x20 && code <= 0x7e;
+}
+
 function appendRun(input: {
   runs: TerminalRun[];
   text: string;
@@ -105,10 +116,12 @@ function appendRun(input: {
   foregroundColor: string;
   customGlyph: TerminalCustomGlyph | null;
   col: number;
+  canMerge: boolean;
 }): void {
   const renderKind = input.customGlyph ? "custom-glyph" : "text";
   const previousRun = input.runs[input.runs.length - 1];
   if (
+    input.canMerge &&
     previousRun &&
     previousRun.styleKey === input.styleKey &&
     previousRun.renderKind === renderKind
@@ -187,6 +200,7 @@ function buildRowModel(input: {
 }): TerminalRowModel {
   const runs: TerminalRun[] = [];
   let hash = 2166136261;
+  let previousCellIsolated = false;
 
   for (let col = 0; col < input.cells.length; col += 1) {
     const cell = input.cells[col];
@@ -215,6 +229,7 @@ function buildRowModel(input: {
       });
       foregroundColor = selection.foregroundColor;
     }
+    const isolated = !customGlyph && (cellCount > 1 || !isGridAlignedText(text));
     appendRun({
       runs,
       text,
@@ -224,7 +239,9 @@ function buildRowModel(input: {
       foregroundColor,
       customGlyph,
       col,
+      canMerge: !isolated && !previousCellIsolated,
     });
+    previousCellIsolated = isolated;
     hash = hashStringPart(hash, text);
     hash = hashStringPart(hash, String(cellCount));
     hash = hashStringPart(hash, styleKey);
