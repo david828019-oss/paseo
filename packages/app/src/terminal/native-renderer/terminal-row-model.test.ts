@@ -37,7 +37,36 @@ describe("terminal row model", () => {
     });
 
     expect(rows[0].runs.map((run) => ({ text: run.text, cellCount: run.cellCount }))).toEqual([
-      { text: "A界", cellCount: 3 },
+      { text: "A", cellCount: 2 },
+      { text: "界", cellCount: 1 },
+    ]);
+  });
+
+  test("isolates wide and non-ASCII cells so fallback glyphs cannot shift the row", () => {
+    const resolver = createTerminalCellStyleResolver(DEFAULT_TERMINAL_THEME);
+
+    const rows = buildRows({
+      grid: [
+        [
+          cell("a", { width: 1 }),
+          cell("你", { width: 2 }),
+          cell(" ", { width: 0 }),
+          cell("好", { width: 2 }),
+          cell(" ", { width: 0 }),
+          cell("⏺", { width: 1 }),
+          cell("b", { width: 1 }),
+          cell("c", { width: 1 }),
+        ],
+      ],
+      resolver,
+    });
+
+    expect(rows[0].runs.map((run) => ({ text: run.text, cellCount: run.cellCount }))).toEqual([
+      { text: "a", cellCount: 1 },
+      { text: "你", cellCount: 2 },
+      { text: "好", cellCount: 2 },
+      { text: "⏺", cellCount: 1 },
+      { text: "bc", cellCount: 2 },
     ]);
   });
 

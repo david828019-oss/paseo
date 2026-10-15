@@ -1,5 +1,5 @@
 import * as pty from "node-pty";
-import xterm, { type Terminal as TerminalType } from "@xterm/headless";
+import xterm, { type IBufferCell, type Terminal as TerminalType } from "@xterm/headless";
 import { randomUUID } from "crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { tmpdir, userInfo } from "node:os";
@@ -556,6 +556,15 @@ function prependPathEntry(currentPath: string, entry: string): string {
   return [entry, ...entries].join(delimiter);
 }
 
+// xterm leaves the cell after a wide character empty with width 0. Keep it empty instead of
+// padding it to " ", or replaying the snapshot adds a column after every CJK or emoji glyph.
+function extractCellChar(cell: IBufferCell): string {
+  if (cell.getWidth() === 0) {
+    return "";
+  }
+  return cell.getChars() || " ";
+}
+
 function extractCell(terminal: TerminalType, row: number, col: number): TerminalCell {
   const buffer = terminal.buffer.active;
   const line = buffer.getLine(row);
@@ -580,7 +589,7 @@ function extractCell(terminal: TerminalType, row: number, col: number): Terminal
   const bg = bgMode !== 0 ? cell.getBgColor() : undefined;
 
   return {
-    char: cell.getChars() || " ",
+    char: extractCellChar(cell),
     fg,
     bg,
     fgMode: fgMode !== 0 ? fgMode : undefined,
@@ -639,7 +648,7 @@ function extractScrollback(
           const fg = fgMode !== 0 ? cell.getFgColor() : undefined;
           const bg = bgMode !== 0 ? cell.getBgColor() : undefined;
           rowCells.push({
-            char: cell.getChars() || " ",
+            char: extractCellChar(cell),
             fg,
             bg,
             fgMode: fgMode !== 0 ? fgMode : undefined,

@@ -30,6 +30,20 @@ describe("renderTerminalSnapshotToAnsi", () => {
     expect(ansi).not.toContain("[?7l");
   });
 
+  it("does not replay the empty spacer cell after a wide character as a space", () => {
+    const state: TerminalState = {
+      rows: 1,
+      cols: 10,
+      scrollback: [],
+      grid: [[{ char: "你" }, { char: "" }, { char: "好" }, { char: "" }, { char: "!" }]],
+      cursor: { row: 0, col: 5 },
+    };
+
+    const ansi = renderTerminalSnapshotToAnsi(state);
+
+    expect(ansi).toContain("你好!");
+  });
+
   it("falls back to verbatim per-row replay when wrap flags are absent (old daemon)", () => {
     // No gridWrapped/scrollbackWrapped: the client cannot tell soft-wraps from hard
     // newlines, so it must keep today's exact behaviour rather than guess.

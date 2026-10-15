@@ -1,3 +1,4 @@
+import { Unicode11Addon } from "@xterm/addon-unicode11";
 import {
   Terminal as HeadlessTerminal,
   type IBufferCell,
@@ -340,6 +341,10 @@ export function createNativeHeadlessTerminal(
     scrollback: options.scrollbackLines ?? 1000,
     allowProposedApi: true,
   });
+  // Match the xterm renderers and agent TUIs, which give emoji two cells. The default
+  // Unicode 6 table gives them one, so every redraw of an emoji row lands a cell off.
+  terminal.loadAddon(new Unicode11Addon());
+  terminal.unicode.activeVersion = "11";
   const decoder = new TextDecoder();
   let coordinateEpoch = 0;
   const coordinateStorage = new Map<object, TerminalCoordinateStorage>();

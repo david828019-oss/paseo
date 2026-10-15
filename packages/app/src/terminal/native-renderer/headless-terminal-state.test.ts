@@ -38,6 +38,15 @@ describe("native headless terminal state", () => {
     });
   });
 
+  test("gives emoji two cells like the xterm renderers do", async () => {
+    const terminal = createNativeHeadlessTerminal({ rows: 5, cols: COLS });
+
+    await terminal.write("✅x");
+
+    const chars = terminal.getState().grid[0].map((cell) => cell.char);
+    expect(chars.slice(0, 3)).toEqual(["✅", " ", "x"]);
+  });
+
   test("exposes bracketed paste mode from headless xterm", async () => {
     const terminal = createNativeHeadlessTerminal({ rows: 5, cols: COLS });
 
